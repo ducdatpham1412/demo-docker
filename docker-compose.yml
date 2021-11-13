@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8
+    restart: always
+    environment:
+      - MYSQL_DATABASE="django-app-db"
+      - MYSQL_USER="root"
+      - MYSQL_PASSWORD="ducdat123"
+      - MYSQL_ROOT_PASSWORD="ducdat123"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    ports:
+      - 3306:3306
+    container_name: db_mysql
+    # networks:
+    #   - hostnetwork
+
+  redis:
+    image: redis:5
+    container_name: redis_channel
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/django
+    ports:
+      - 8000:8000
+    image: app
+    container_name: demo_docker
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - db
+      - redis
+# networks:
+#   hostnetwork:
+#     external: true
