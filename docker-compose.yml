@@ -1,40 +1,65 @@
 version: "3.8"
 
 services:
-  db:
+  db_mysql:
     image: mysql:8
-    restart: always
     environment:
-      - MYSQL_DATABASE="django-app-db"
-      - MYSQL_USER="root"
-      - MYSQL_PASSWORD="ducdat123"
-      - MYSQL_ROOT_PASSWORD="ducdat123"
+      MYSQL_DATABASE: "ducdat"
+      MYSQL_ROOT_PASSWORD: "ducdat"
+    container_name: db_mysql
+    restart: always
+    networks:
+      - demo-docker
     volumes:
       - ./data/mysql:/var/lib/mysql
     ports:
       - 3306:3306
-    container_name: db_mysql
-    # networks:
-    #   - hostnetwork
+
+  db_mongo:
+    image: mongo:3.6.19-xenial
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: 'root'
+      MONGO_INITDB_ROOT_PASSWORD: 'ducdat'
+      MONGO_INITDB_DATABASE: 'ducdat'
+    container_name: db_mongo
+    restart: always
+    networks:
+      - demo-docker
+    volumes:
+      - ./data/mongo:/data/db
+    ports:
+      - 27017:27017
 
   redis:
     image: redis:5
-    container_name: redis_channel
+    container_name: redis
+    restart: always
+    networks:
+      - demo-docker
+    ports:
+      - 6379:6379
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    image: app:latest
+    container_name: app
+    command: python app/manage.py runserver 0.0.0.0:8000
+    networks:
+      - demo-docker
+    depends_on:
+      - db_mysql
+      - db_mongo
+      - redis
     volumes:
-      - .:/django
+      - ./app:/usr/src/app
     ports:
       - 8000:8000
-    image: app
-    container_name: demo_docker
-    command: python manage.py runserver 0.0.0.0:8000
-    depends_on:
-      - db
+    links:
       - redis
-# networks:
-#   hostnetwork:
-#     external: true
+
+
+networks:
+  demo-docker:
+    driver: bridge
